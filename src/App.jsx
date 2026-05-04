@@ -1,5 +1,32 @@
 import { useState, useEffect } from "react";
-import seedData from "./data.json";
+// ─── Seed data (squad roster with starting tiers) ───────────────────────────
+const seedData = {
+  members: {
+    "Foz":      { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
+    "Hung":     { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:360 },
+    "Jimbo":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
+    "Moon":     { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
+    "Wads":     { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
+    "Vaughny":  { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:290 },
+    "Posty":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:360 },
+    "Wallen":   { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
+    "Tones":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
+    "Hodgey":   { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
+    "Gards":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
+    "Sharpy":   { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
+    "Coop":     { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:290 },
+    "Shaz":     { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
+    "Joe":      { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
+    "Fitto":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
+    "Mudders":  { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
+    "Hicksy":   { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:290 },
+    "Tes":      { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:290 },
+    "Rabbitoh": { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
+    "Benny":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
+  },
+  lastUpdated: null,
+  firstUpdated: null,
+};
 
 const TOTAL_KM = 4000;
 const ADMIN_PIN = "1234"; // ← Change this to your own PIN
