@@ -29,24 +29,58 @@ const seedData = {
 };
 
 const TOTAL_KM = 4000;
-const ADMIN_PIN = "1234"; // ← Change this to your own PIN
-const LOCAL_KEY = "whale-tracker-data";
+const ADMIN_PIN = "1234"; // ← Change this to your preferred PIN
 
-// Load data: localStorage first (most recent), fall back to committed data.json
-function loadData() {
-  try {
-    const saved = localStorage.getItem(LOCAL_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Merge so new members from data.json always appear
-      return { ...parsed, members: { ...seedData.members, ...parsed.members } };
-    }
-  } catch {}
+// ─── JSONBin.io config — paste your values here after setup ──────────────────
+const JSONBIN_BIN_ID  = "69f92ff2aaba882197700007";
+const JSONBIN_API_KEY = "$2a$10$5B/vcaN0geY01AhMkqs3IeoUqSiksT9SOAIQGG9IqYX5ON5Xb/OtK";
+// ─────────────────────────────────────────────────────────────────────────────
+
+const LOCAL_KEY = "whale-tracker-cache";
+
+function localCache(data) {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(data)); } catch {}
+}
+function localLoad() {
+  try { const v = localStorage.getItem(LOCAL_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
+}
+function isConfigured() {
+  return !JSONBIN_BIN_ID.includes("PASTE") && !JSONBIN_API_KEY.includes("PASTE");
+}
+
+async function loadData() {
+  // Always try JSONBin first for cross-device data
+  if (isConfigured()) {
+    try {
+      const r = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+        headers: { "X-Master-Key": JSONBIN_API_KEY, "X-Bin-Meta": "false" }
+      });
+      if (r.ok) {
+        const d = await r.json();
+        if (d && d.members) {
+          const merged = { ...d, members: { ...seedData.members, ...d.members } };
+          localCache(merged);
+          return merged;
+        }
+      }
+    } catch {}
+  }
+  // Fall back to local cache, then seed
+  const cached = localLoad();
+  if (cached && cached.members) return { ...cached, members: { ...seedData.members, ...cached.members } };
   return { ...seedData, members: { ...seedData.members } };
 }
 
-function saveData(data) {
-  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(data)); } catch {}
+async function saveData(data) {
+  localCache(data); // instant local save
+  if (!isConfigured()) return;
+  try {
+    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "X-Master-Key": JSONBIN_API_KEY },
+      body: JSON.stringify(data)
+    });
+  } catch {}
 }
 
 function memberTierPace(v) {
@@ -280,9 +314,11 @@ export default function App() {
   const [editTier, setEditTier]           = useState("humpback");
 
   useEffect(() => {
-    setData(loadData());
-    setLoaded(true);
-    setTimeout(() => setAnimated(true), 80);
+    loadData().then(d => {
+      setData(d);
+      setLoaded(true);
+      setTimeout(() => setAnimated(true), 80);
+    });
   }, []);
 
   const members    = data.members || {};
@@ -331,7 +367,7 @@ export default function App() {
   const progressPts = ALL_PATH.slice(0, Math.max(1, Math.ceil(progress * 80)));
   const whaleTx = animated ? "transform 1.6s cubic-bezier(0.25,0.1,0.25,1)" : "none";
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     const n = name.trim();
     const k = parseFloat(km);
     if (!n || isNaN(k) || k <= 0) return;
@@ -355,14 +391,14 @@ export default function App() {
     setKm(""); setPace("");
     setNote(`🐋 +${k}km for ${n}!${parsedPace ? `  Pace: ${formatPace(parsedPace)}` : ""}`);
     setTimeout(() => setNote(""), 3200);
-    saveData(newData);
+    await saveData(newData);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!confirm("Reset ALL migration data? This cannot be undone.")) return;
     const fresh = { ...seedData, members: { ...seedData.members } };
     setData(fresh);
-    saveData(fresh);
+    await saveData(fresh);
   };
 
   const handlePinSubmit = () => {
@@ -374,7 +410,7 @@ export default function App() {
     }
   };
 
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
     const n = newMemberName.trim();
     if (!n) return;
     if (members[n]) { setNote(`⚠️ ${n} is already in the squad`); setTimeout(()=>setNote(""),2500); return; }
@@ -390,7 +426,7 @@ export default function App() {
     setNewMemberName("");
     setNote(`✅ ${n} added as ${tier.label}!`);
     setTimeout(()=>setNote(""), 3000);
-    saveData(newData);
+    await saveData(newData);
   };
 
   const handleSelectEdit = (memberName) => {
@@ -405,7 +441,7 @@ export default function App() {
     setEditTier(getWhaleTier(memberTierPace(v))?.id || "humpback");
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editTarget) return;
     const newName = editName.trim();
     if (!newName) return;
@@ -430,10 +466,10 @@ export default function App() {
     setEditTarget(""); setEditName(""); setEditKm(""); setEditPace("");
     setNote(`✅ ${editTarget !== newName ? editTarget+" → "+newName : newName} updated`);
     setTimeout(()=>setNote(""), 3000);
-    saveData(newData);
+    await saveData(newData);
   };
 
-  const handleDeleteMember = (memberName) => {
+  const handleDeleteMember = async (memberName) => {
     if (!confirm(`Remove ${memberName} from the squad?`)) return;
     const updated = { ...members };
     delete updated[memberName];
@@ -442,7 +478,7 @@ export default function App() {
     setEditTarget(""); setEditName(""); setEditKm(""); setEditPace("");
     setNote(`🗑️ ${memberName} removed`);
     setTimeout(()=>setNote(""), 3000);
-    saveData(newData);
+    await saveData(newData);
   };
 
   if (!loaded) return (
@@ -785,6 +821,13 @@ export default function App() {
             <button onClick={()=>setIsAdmin(false)} style={{ background:"none", border:"none", color:"rgba(224,242,254,0.25)", fontSize:11, fontFamily:"'DM Sans',sans-serif" }}>🔒 lock</button>
           </div>
 
+          {/* ── Setup warning if JSONBin not configured ── */}
+          {!isConfigured() && (
+            <div style={{ background:"rgba(234,179,8,0.1)", border:"1px solid rgba(234,179,8,0.4)", borderRadius:9, padding:"10px 13px", marginBottom:12, fontSize:12, color:"#fcd34d", lineHeight:1.6 }}>
+              ⚠️ <strong>Cross-device sync not set up.</strong> Data only saves on this device. See the setup guide to fix this.
+            </div>
+          )}
+
           {/* ── Admin sub-tabs ── */}
           <div style={{ display:"flex", gap:5, background:"rgba(0,0,0,0.3)", borderRadius:9, padding:3, marginBottom:14 }}>
             {[["log","📍 Log a Run"],["addmember","➕ Add Member"],["edit","✏️ Edit"]].map(([id,label])=>(
@@ -939,7 +982,7 @@ export default function App() {
           <div style={{ marginTop:12, paddingTop:10, borderTop:"1px solid rgba(255,255,255,0.07)" }}>
             <div style={{ marginBottom:8, background:"rgba(56,189,248,0.06)", border:"1px solid rgba(56,189,248,0.18)", borderRadius:9, padding:"10px 12px" }}>
               <div style={{ fontSize:10, color:"#7dd3fc", letterSpacing:2, textTransform:"uppercase", fontWeight:700, marginBottom:6 }}>📋 Export Data</div>
-              <div style={{ fontSize:11, color:"rgba(224,242,254,0.5)", marginBottom:8, lineHeight:1.5 }}>Copy this JSON and paste it into <strong style={{color:"rgba(224,242,254,0.75)"}}>src/data.json</strong> in GitHub to permanently save</div>
+              <div style={{ fontSize:11, color:"rgba(224,242,254,0.5)", marginBottom:8, lineHeight:1.5 }}>Backup: copy this JSON and paste into <strong style={{color:"rgba(224,242,254,0.75)"}}>src/data.json</strong> on GitHub as a backup</div>
               <button onClick={()=>{
                 const json = JSON.stringify(data, null, 2);
                 navigator.clipboard.writeText(json).then(()=>{
