@@ -185,6 +185,36 @@ function WhaleGraphic({ id, width = 110 }) {
   return null;
 }
 
+// ─── Whale tiers by average pace (sec/km) ───────────────────────────────────
+// 4:40 = 280s  |  5:00 = 300s  |  5:20 = 320s  |  5:40 = 340s
+const WHALE_TIERS = [
+  {
+    id:"orca", label:"Killer Whale", sub:"Elite", maxPaceSec:280,
+    color:"#06b6d4", bg:"rgba(6,182,212,0.1)", border:"rgba(6,182,212,0.35)", range:"< 4:40 /km",
+    desc:"The apex predator. Explosive speed, razor-sharp instincts, and hunts in coordinated pods. Feared by everything in the ocean.",
+  },
+  {
+    id:"minke", label:"Minke Whale", sub:"Fast", maxPaceSec:300,
+    color:"#38bdf8", bg:"rgba(56,189,248,0.09)", border:"rgba(56,189,248,0.28)", range:"4:40 – 5:00 /km",
+    desc:"Agile, sleek, and surprisingly swift. One of the fastest baleen whales — curious by nature, acrobatic in action.",
+  },
+  {
+    id:"humpback", label:"Humpback Whale", sub:"Solid", maxPaceSec:320,
+    color:"#60a5fa", bg:"rgba(96,165,250,0.09)", border:"rgba(96,165,250,0.26)", range:"5:00 – 5:20 /km",
+    desc:"Famous for their haunting songs and powerful breaches. Strong, steady long-distance migrants covering thousands of kilometres.",
+  },
+  {
+    id:"sperm", label:"Sperm Whale", sub:"Endurance", maxPaceSec:340,
+    color:"#a78bfa", bg:"rgba(167,139,250,0.09)", border:"rgba(167,139,250,0.26)", range:"5:20 – 5:40 /km",
+    desc:"The deep divers. Largest toothed predator on Earth, capable of diving 3km deep. Built for endurance over raw pace.",
+  },
+  {
+    id:"beluga", label:"Beluga Whale", sub:"Cruising", maxPaceSec:Infinity,
+    color:"#cbd5e1", bg:"rgba(203,213,225,0.07)", border:"rgba(203,213,225,0.22)", range:"5:40+ /km",
+    desc:"The canary of the sea. Social, playful, and gloriously vocal. Belugas cruise at their own pace and are absolutely unbothered.",
+  },
+];
+
 function getWhaleTier(avgPaceSec) {
   if (!avgPaceSec || avgPaceSec <= 0) return null;
   return WHALE_TIERS.find(t => avgPaceSec < t.maxPaceSec) || WHALE_TIERS[4];
