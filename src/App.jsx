@@ -48,27 +48,32 @@ function isConfigured() {
   return !JSONBIN_BIN_ID.includes("PASTE") && !JSONBIN_API_KEY.includes("PASTE");
 }
 
-async function loadData() {
-  // Always try JSONBin first for cross-device data
-  if (isConfigured()) {
-    try {
-      const r = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-        headers: { "X-Master-Key": JSONBIN_API_KEY, "X-Bin-Meta": "false" }
-      });
-      if (r.ok) {
-        const d = await r.json();
-        if (d && d.members) {
-          const merged = { ...d, members: { ...seedData.members, ...d.members } };
-          localCache(merged);
-          return merged;
-        }
-      }
-    } catch {}
-  }
-  // Fall back to local cache, then seed
+// Returns instantly from cache/seed, then syncs JSONBin in background
+function loadDataInstant() {
   const cached = localLoad();
   if (cached && cached.members) return { ...cached, members: { ...seedData.members, ...cached.members } };
   return { ...seedData, members: { ...seedData.members } };
+}
+
+async function syncFromJsonBin(setData) {
+  if (!isConfigured()) return;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000); // 6s timeout
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+      headers: { "X-Master-Key": JSONBIN_API_KEY, "X-Bin-Meta": "false" },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (r.ok) {
+      const d = await r.json();
+      if (d && d.members) {
+        const merged = { ...d, members: { ...seedData.members, ...d.members } };
+        localCache(merged);
+        setData(merged); // update UI with fresh cloud data
+      }
+    }
+  } catch {}
 }
 
 async function saveData(data) {
@@ -314,11 +319,12 @@ export default function App() {
   const [editTier, setEditTier]           = useState("humpback");
 
   useEffect(() => {
-    loadData().then(d => {
-      setData(d);
-      setLoaded(true);
-      setTimeout(() => setAnimated(true), 80);
-    });
+    // Load instantly from cache/seed — no waiting
+    setData(loadDataInstant());
+    setLoaded(true);
+    setTimeout(() => setAnimated(true), 80);
+    // Then sync from JSONBin in background (updates UI if cloud has newer data)
+    syncFromJsonBin(setData);
   }, []);
 
   const members    = data.members || {};
