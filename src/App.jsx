@@ -2,38 +2,39 @@ import { useState, useEffect } from "react";
 // ─── Seed data (squad roster with starting tiers) ───────────────────────────
 const seedData = {
   members: {
-    "Foz":      { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
-    "Hung":     { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:360 },
-    "Jimbo":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
-    "Moon":     { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
-    "Wads":     { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
-    "Vaughny":  { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:290 },
-    "Posty":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:360 },
-    "Wallen":   { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
-    "Tones":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
-    "Hodgey":   { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
-    "Gards":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
-    "Sharpy":   { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
-    "Coop":     { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:290 },
-    "Shaz":     { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
-    "Joe":      { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
-    "Fitto":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
-    "Mudders":  { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:330 },
-    "Hicksy":   { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:290 },
-    "Tes":      { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:290 },
-    "Rabbitoh": { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
-    "Benny":    { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec:310 },
+    "Foz": { km:0, runs:0 },
+    "Hung": { km:0, runs:0 },
+    "Jimbo": { km:0, runs:0 },
+    "Moon": { km:0, runs:0 },
+    "Wads": { km:0, runs:0 },
+    "Vaughny": { km:0, runs:0 },
+    "Posty": { km:0, runs:0 },
+    "Wallen": { km:0, runs:0 },
+    "Tones": { km:0, runs:0 },
+    "Hodgey": { km:0, runs:0 },
+    "Gards": { km:0, runs:0 },
+    "Sharpy": { km:0, runs:0 },
+    "Coop": { km:0, runs:0 },
+    "Shaz": { km:0, runs:0 },
+    "Joe": { km:0, runs:0 },
+    "Fitto": { km:0, runs:0 },
+    "Mudders": { km:0, runs:0 },
+    "Hicksy": { km:0, runs:0 },
+    "Tes": { km:0, runs:0 },
+    "Rabbitoh": { km:0, runs:0 },
+    "Benny": { km:0, runs:0 },
   },
   lastUpdated: null,
   firstUpdated: null,
 };
 
 const TOTAL_KM = 4000;
+const CUTOFF_DATE = new Date("2026-08-15T00:00:00");
 const ADMIN_PIN = "1234"; // ← Change this to your preferred PIN
 
 // ─── JSONBin.io config — paste your values here after setup ──────────────────
-const JSONBIN_BIN_ID  = "69f92ff2aaba882197700007";
-const JSONBIN_API_KEY = "$2a$10$5B/vcaN0geY01AhMkqs3IeoUqSiksT9SOAIQGG9IqYX5ON5Xb/OtK";
+const JSONBIN_BIN_ID  = "PASTE_BIN_ID_HERE";
+const JSONBIN_API_KEY = "PASTE_API_KEY_HERE";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LOCAL_KEY = "whale-tracker-cache";
@@ -88,9 +89,8 @@ async function saveData(data) {
   } catch {}
 }
 
-function memberTierPace(v) {
-  if (v.paceKm > 0) return v.paceTotal / v.paceKm;
-  return v.seedPaceSec || null;
+function memberTier(v) {
+  return getWhaleTier(v.km || 0);
 }
 
 // ─── Whale SVG illustrations ────────────────────────────────────────────────
@@ -224,39 +224,44 @@ function WhaleGraphic({ id, width = 110 }) {
   return null;
 }
 
-// ─── Whale tiers by average pace (sec/km) ───────────────────────────────────
-// 4:40 = 280s  |  5:00 = 300s  |  5:20 = 320s  |  5:40 = 340s
+// ─── Whale tiers by total km covered ────────────────────────────────────────
 const WHALE_TIERS = [
   {
-    id:"orca", label:"Killer Whale", sub:"Elite", maxPaceSec:280,
-    color:"#06b6d4", bg:"rgba(6,182,212,0.1)", border:"rgba(6,182,212,0.35)", range:"< 4:40 /km",
-    desc:"The apex predator. Explosive speed, razor-sharp instincts, and hunts in coordinated pods. Feared by everything in the ocean.",
+    id:"orca", label:"Killer Whale", sub:"Elite", minKm:160, maxKm:Infinity,
+    color:"#06b6d4", bg:"rgba(6,182,212,0.1)", border:"rgba(6,182,212,0.35)", range:"160+ km",
+    desc:"The apex predator of the ocean — and of this group. Fast, fearless, and utterly relentless. Killer Whales hunt in coordinated packs and dominate everything in their path.",
   },
   {
-    id:"minke", label:"Minke Whale", sub:"Fast", maxPaceSec:300,
-    color:"#38bdf8", bg:"rgba(56,189,248,0.09)", border:"rgba(56,189,248,0.28)", range:"4:40 – 5:00 /km",
-    desc:"Agile, sleek, and surprisingly swift. One of the fastest baleen whales — curious by nature, acrobatic in action.",
+    id:"minke", label:"Minke Whale", sub:"Fast", minKm:130, maxKm:160,
+    color:"#38bdf8", bg:"rgba(56,189,248,0.09)", border:"rgba(56,189,248,0.28)", range:"130 – 160 km",
+    desc:"Agile, sleek, and deceptively quick. One of the fastest baleen whales in the ocean — they cover serious distance without making a fuss about it.",
   },
   {
-    id:"humpback", label:"Humpback Whale", sub:"Solid", maxPaceSec:320,
-    color:"#60a5fa", bg:"rgba(96,165,250,0.09)", border:"rgba(96,165,250,0.26)", range:"5:00 – 5:20 /km",
-    desc:"Famous for their haunting songs and powerful breaches. Strong, steady long-distance migrants covering thousands of kilometres.",
+    id:"humpback", label:"Humpback Whale", sub:"Solid", minKm:100, maxKm:130,
+    color:"#60a5fa", bg:"rgba(96,165,250,0.09)", border:"rgba(96,165,250,0.26)", range:"100 – 130 km",
+    desc:"Famous for their haunting songs and spectacular breaches. Strong, consistent long-distance migrants — putting in the work week after week.",
   },
   {
-    id:"sperm", label:"Sperm Whale", sub:"Endurance", maxPaceSec:340,
-    color:"#a78bfa", bg:"rgba(167,139,250,0.09)", border:"rgba(167,139,250,0.26)", range:"5:20 – 5:40 /km",
-    desc:"The deep divers. Largest toothed predator on Earth, capable of diving 3km deep. Built for endurance over raw pace.",
+    id:"baleen", label:"Baleen Whale", sub:"Building", minKm:60, maxKm:100,
+    color:"#34d399", bg:"rgba(52,211,153,0.09)", border:"rgba(52,211,153,0.26)", range:"60 – 100 km",
+    desc:"The great filter feeders — patient, powerful, and built for the long haul. Baleen whales move with quiet purpose, covering ground steadily without burning out.",
   },
   {
-    id:"beluga", label:"Beluga Whale", sub:"Cruising", maxPaceSec:Infinity,
-    color:"#cbd5e1", bg:"rgba(203,213,225,0.07)", border:"rgba(203,213,225,0.22)", range:"5:40+ /km",
-    desc:"The canary of the sea. Social, playful, and gloriously vocal. Belugas cruise at their own pace and are absolutely unbothered.",
+    id:"sperm", label:"Sperm Whale", sub:"Endurance", minKm:30, maxKm:60,
+    color:"#a78bfa", bg:"rgba(167,139,250,0.09)", border:"rgba(167,139,250,0.26)", range:"30 – 60 km",
+    desc:"The deep divers. Largest toothed predator on Earth — built for endurance and pressure. They go further than anyone expects, diving deep where others don't dare.",
   },
-];
+  {
+    id:"beluga", label:"Beluga Whale", sub:"Getting Started", minKm:0, maxKm:30,
+    color:"#cbd5e1", bg:"rgba(203,213,225,0.07)", border:"rgba(203,213,225,0.22)", range:"0 – 30 km",
+    desc:"The canary of the sea — social, playful, and warming up. Every legend starts somewhere. Belugas are just finding their rhythm and getting the legs (fins) under them.",
+  },
+]
 
-function getWhaleTier(avgPaceSec) {
-  if (!avgPaceSec || avgPaceSec <= 0) return null;
-  return WHALE_TIERS.find(t => avgPaceSec < t.maxPaceSec) || WHALE_TIERS[4];
+function getWhaleTier(km) {
+  if (km === null || km === undefined) return WHALE_TIERS[WHALE_TIERS.length - 1]; // default beluga
+  // Sorted highest first in array, so find first tier where km >= minKm
+  return WHALE_TIERS.find(t => km >= t.minKm) || WHALE_TIERS[WHALE_TIERS.length - 1];
 }
 
 function parsePace(str) {
@@ -338,17 +343,9 @@ export default function App() {
   const totalRuns      = memberList.reduce((s,[,v]) => s + (v.runs||0), 0);
   const numRunners     = memberList.length;
   const avgKmPerRunner = numRunners > 0 ? (totalKm / numRunners).toFixed(1) : "—";
-  const totalPaceKm    = memberList.reduce((s,[,v]) => s + (v.paceKm||0), 0);
-  const totalPaceSum   = memberList.reduce((s,[,v]) => s + (v.paceTotal||0), 0);
-  const groupAvgPaceSec = totalPaceKm > 0 ? totalPaceSum / totalPaceKm : null;
 
-  let fastestRunner = null, fastestPaceSec = Infinity;
   let mostActive = null, mostRuns = 0;
   for (const [n, v] of memberList) {
-    if (v.paceKm > 0) {
-      const avg = v.paceTotal / v.paceKm;
-      if (avg < fastestPaceSec) { fastestPaceSec = avg; fastestRunner = n; }
-    }
     if ((v.runs||0) > mostRuns) { mostRuns = v.runs||0; mostActive = n; }
   }
 
@@ -377,15 +374,12 @@ export default function App() {
     const n = name.trim();
     const k = parseFloat(km);
     if (!n || isNaN(k) || k <= 0) return;
-    const parsedPace = parsePace(pace);
-    const ex = members[n] || { km:0, runs:0, paceTotal:0, paceKm:0 };
+    const ex = members[n] || { km:0, runs:0 };
     const updated = {
       ...members,
       [n]: {
-        km:        (ex.km||0) + k,
-        runs:      (ex.runs||0) + 1,
-        paceTotal: (ex.paceTotal||0) + (parsedPace ? parsedPace * k : 0),
-        paceKm:    (ex.paceKm||0)    + (parsedPace ? k : 0),
+        km:   (ex.km||0) + k,
+        runs: (ex.runs||0) + 1,
       }
     };
     const newData = {
@@ -395,7 +389,7 @@ export default function App() {
     };
     setData(newData);
     setKm(""); setPace("");
-    setNote(`🐋 +${k}km for ${n}!${parsedPace ? `  Pace: ${formatPace(parsedPace)}` : ""}`);
+    setNote(`🐋 +${k}km for ${n}! Now a ${memberTier(updated[n]).label}`);
     setTimeout(() => setNote(""), 3200);
     await saveData(newData);
   };
@@ -422,10 +416,9 @@ export default function App() {
     if (members[n]) { setNote(`⚠️ ${n} is already in the squad`); setTimeout(()=>setNote(""),2500); return; }
     const tier = WHALE_TIERS.find(t => t.id === newMemberTier) || WHALE_TIERS[2];
     // Use midpoint of tier range as seed pace
-    const seedMap = { orca:265, minke:290, humpback:310, sperm:330, beluga:360 };
     const updated = {
       ...members,
-      [n]: { km:0, runs:0, paceTotal:0, paceKm:0, seedPaceSec: seedMap[newMemberTier] || 310 }
+      [n]: { km:0, runs:0 }
     };
     const newData = { ...data, members: updated, lastUpdated: new Date().toISOString() };
     setData(newData);
@@ -442,9 +435,7 @@ export default function App() {
     setEditName(memberName);
     setEditKm(v.km > 0 ? String(v.km) : "");
     // Reconstruct avg pace for display
-    const avgSec = v.paceKm > 0 ? Math.round(v.paceTotal / v.paceKm) : (v.seedPaceSec || null);
-    setEditPace(avgSec ? formatPace(avgSec).replace(" /km","") : "");
-    setEditTier(getWhaleTier(memberTierPace(v))?.id || "humpback");
+    setEditTier(memberTier(v)?.id || "humpback");
   };
 
   const handleSaveEdit = async () => {
@@ -452,8 +443,6 @@ export default function App() {
     const newName = editName.trim();
     if (!newName) return;
     const k = parseFloat(editKm) || 0;
-    const parsedPace = parsePace(editPace);
-    const seedMap = { orca:265, minke:290, humpback:310, sperm:330, beluga:360 };
     const updated = { ...members };
     const existing = updated[editTarget];
     // Remove old entry (handle rename)
@@ -462,10 +451,6 @@ export default function App() {
       ...existing,
       km: k,
       runs: existing.runs || 0,
-      // If pace was manually edited, rebuild paceTotal/paceKm from new avg × km
-      paceTotal: parsedPace && k > 0 ? parsedPace * k : (parsedPace ? parsedPace : existing.paceTotal || 0),
-      paceKm:    parsedPace && k > 0 ? k : (parsedPace ? 1 : existing.paceKm || 0),
-      seedPaceSec: seedMap[editTier] || existing.seedPaceSec || 310,
     };
     const newData = { ...data, members: updated, lastUpdated: new Date().toISOString() };
     setData(newData);
@@ -648,8 +633,7 @@ export default function App() {
               <div style={{ color:"rgba(224,242,254,0.28)", fontSize:13, textAlign:"center", padding:"18px 0" }}>No runners yet — log the first km!</div>
             ) : memberList.map(([n,v],i)=>{
               const share = totalKm > 0 ? ((v.km/totalKm)*100).toFixed(0) : 0;
-              const avgPaceSec = v.paceKm > 0 ? v.paceTotal/v.paceKm : null;
-              const tier = getWhaleTier(memberTierPace(v));
+              const tier = memberTier(v);
               return (
                 <div key={n} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", marginBottom:5, background: i===0?"rgba(234,179,8,0.07)":i===1?"rgba(148,163,184,0.06)":i===2?"rgba(180,83,9,0.06)":"rgba(255,255,255,0.03)", border:`1px solid ${i===0?"rgba(234,179,8,0.25)":i===1?"rgba(148,163,184,0.18)":i===2?"rgba(180,83,9,0.18)":"rgba(255,255,255,0.05)"}`, borderRadius:10 }}>
                   <div style={{ width:20, textAlign:"center", fontSize: i<3?14:11, flexShrink:0 }}>{MEDALS[i]||`#${i+1}`}</div>
@@ -677,16 +661,34 @@ export default function App() {
       {/* ══════════════════ STATS TAB ══════════════════ */}
       {tab === "stats" && (
         <div style={{ margin:"0 16px" }}>
+          {/* Days remaining */}
+          {(() => {
+            const now = new Date();
+            const daysLeft = Math.max(0, Math.ceil((CUTOFF_DATE - now) / (1000*60*60*24)));
+            const pct = Math.min(100, ((TOTAL_KM - kmLeft) / TOTAL_KM * 100)).toFixed(1);
+            const isOver = now > CUTOFF_DATE;
+            return (
+              <div style={{ background: isOver ? "rgba(239,68,68,0.08)" : "rgba(56,189,248,0.07)", border:`1px solid ${isOver ? "rgba(239,68,68,0.3)" : "rgba(56,189,248,0.2)"}`, borderRadius:12, padding:"14px 16px", marginBottom:12, textAlign:"center" }}>
+                <div style={{ fontSize:10, letterSpacing:2, color: isOver ? "#fca5a5" : "#7dd3fc", textTransform:"uppercase", fontWeight:700, marginBottom:6 }}>
+                  {isOver ? "⛔ Challenge Ended" : "⏳ Challenge Ends Aug 15, 2026"}
+                </div>
+                <div style={{ fontSize:28, fontWeight:800, color: isOver ? "#fca5a5" : "#38bdf8" }}>
+                  {isOver ? "Done!" : `${daysLeft} days left`}
+                </div>
+                {!isOver && <div style={{ fontSize:11, color:"rgba(224,242,254,0.4)", marginTop:4 }}>{pct}% of journey complete</div>}
+              </div>
+            );
+          })()}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9, marginBottom:12 }}>
             {[
-              ["🏃 Runners",           numRunners],
-              ["📍 Runs logged",       totalRuns],
+              ["🏃 Runners",          numRunners],
+              ["📍 Total runs",        totalRuns],
               ["📏 Avg km / runner",   numRunners > 0 ? `${avgKmPerRunner} km` : "—"],
-              ["⚡ Group avg pace",    formatPace(groupAvgPaceSec ? Math.round(groupAvgPaceSec) : null)],
-              ["🚀 Fastest runner",    fastestRunner ? fastestRunner.split(" ")[0] : "—"],
-              ["🎯 Fastest avg pace",  fastestRunner ? formatPace(Math.round(fastestPaceSec)) : "—"],
-              ["🔥 Most active",       mostActive ? mostActive.split(" ")[0] : "—"],
-              ["📅 Their run count",   mostActive ? `${mostRuns} run${mostRuns!==1?"s":""}` : "—"],
+              ["🏆 Most km",           memberList[0] ? `${memberList[0][0].split(" ")[0]} (${memberList[0][1].km.toFixed(1)}km)` : "—"],
+              ["🔥 Most active",       mostActive ? `${mostActive.split(" ")[0]} (${mostRuns} runs)` : "—"],
+              ["🐋 Killer Whales",     memberList.filter(([,v])=>memberTier(v)?.id==="orca").length],
+              ["🐋 Minke Whales",      memberList.filter(([,v])=>memberTier(v)?.id==="minke").length],
+              ["🐋 Humpbacks",         memberList.filter(([,v])=>memberTier(v)?.id==="humpback").length],
             ].map(([label,val])=>(
               <div key={label} style={{ background:"rgba(56,189,248,0.07)", border:"1px solid rgba(56,189,248,0.15)", borderRadius:12, padding:"13px 12px" }}>
                 <div style={{ fontSize:11, color:"rgba(125,211,252,0.55)", marginBottom:6 }}>{label}</div>
@@ -710,8 +712,7 @@ export default function App() {
             {memberList.length === 0 ? (
               <div style={{ color:"rgba(224,242,254,0.28)", fontSize:13, textAlign:"center", padding:"18px 0" }}>No runners yet</div>
             ) : memberList.map(([n,v],i)=>{
-              const avgPaceSec = v.paceKm > 0 ? v.paceTotal/v.paceKm : null;
-              const tier = getWhaleTier(memberTierPace(v));
+              const tier = memberTier(v);
               return (
                 <div key={n} style={{ padding:"10px 12px", marginBottom:7, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:10 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -725,8 +726,7 @@ export default function App() {
                   </div>
                   <div style={{ display:"flex", gap:14, marginTop:5, paddingLeft:26, flexWrap:"wrap" }}>
                     <span style={{ fontSize:11, color:"rgba(224,242,254,0.4)" }}>{v.runs||0} run{(v.runs||0)!==1?"s":""}</span>
-                    <span style={{ fontSize:11, color:"rgba(224,242,254,0.4)" }}>Avg pace: <span style={{ color:"rgba(224,242,254,0.72)" }}>{formatPace(avgPaceSec ? Math.round(avgPaceSec) : null)}</span></span>
-                    {tier && <span style={{ fontSize:11, color: tier.color }}>{tier.label}</span>}
+                    {tier && <span style={{ fontSize:11, color: tier.color }}>{tier.label} · {tier.range}</span>}
                   </div>
                 </div>
               );
@@ -743,7 +743,7 @@ export default function App() {
           </div>
           {WHALE_TIERS.map(t=>{
             const runners = memberList.filter(([,v])=>{
-              return getWhaleTier(memberTierPace(v))?.id === t.id;
+              return memberTier(v)?.id === t.id;
             });
             return (
               <div key={t.id} style={{ marginBottom:11, background:t.bg, border:`1px solid ${t.border}`, borderRadius:14, overflow:"hidden" }}>
@@ -909,7 +909,7 @@ export default function App() {
               <div style={{ fontSize:11, color:"rgba(224,242,254,0.45)", marginBottom:8 }}>Select member to edit</div>
               <div style={{ display:"flex", flexDirection:"column", gap:5, maxHeight:200, overflowY:"auto" }}>
                 {memberList.map(([n, v]) => {
-                  const tier = getWhaleTier(memberTierPace(v));
+                  const tier = memberTier(v);
                   return (
                     <button key={n} onClick={()=>handleSelectEdit(n)}
                       style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:9, border:`1px solid ${editTarget===n ? "rgba(56,189,248,0.4)" : "rgba(255,255,255,0.07)"}`, background: editTarget===n ? "rgba(56,189,248,0.12)" : "rgba(255,255,255,0.02)", cursor:"pointer", textAlign:"left" }}
@@ -953,19 +953,23 @@ export default function App() {
                   </div>
                 </div>
 
-                <div style={{ marginBottom:12 }}>
-                  <div style={{ fontSize:11, color:"rgba(224,242,254,0.4)", marginBottom:6 }}>Category</div>
-                  <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
-                    {WHALE_TIERS.map(t=>(
-                      <button key={t.id} onClick={()=>setEditTier(t.id)}
-                        style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 10px", borderRadius:8, border:`1px solid ${editTier===t.id ? t.border : "rgba(255,255,255,0.07)"}`, background: editTier===t.id ? t.bg : "rgba(255,255,255,0.02)", cursor:"pointer" }}
-                      >
-                        <WhaleGraphic id={t.id} width={32}/>
-                        <span style={{ fontSize:11, fontWeight: editTier===t.id ? 700 : 400, color: editTier===t.id ? t.color : "rgba(224,242,254,0.5)" }}>{t.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* Category is now auto-calculated from km — no manual override needed */}
+                {(() => {
+                  const previewKm = parseFloat(editKm) || 0;
+                  const previewTier = getWhaleTier(previewKm);
+                  return (
+                    <div style={{ marginBottom:12, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:9, padding:"10px 12px" }}>
+                      <div style={{ fontSize:11, color:"rgba(224,242,254,0.4)", marginBottom:6 }}>Category (auto from km)</div>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <WhaleGraphic id={previewTier.id} width={42}/>
+                        <div>
+                          <div style={{ fontWeight:700, fontSize:13, color:previewTier.color }}>{previewTier.label}</div>
+                          <div style={{ fontSize:11, color:"rgba(224,242,254,0.35)" }}>{previewTier.range}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div style={{ display:"flex", gap:8 }}>
                   <button onClick={handleSaveEdit}
