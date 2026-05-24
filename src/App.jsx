@@ -639,7 +639,7 @@ export default function App() {
           <div style={{ margin:"0 16px", background:"rgba(0,0,0,0.28)", border:"1px solid rgba(56,189,248,0.17)", borderRadius:14, padding:14 }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
               <div style={{ fontSize:10, letterSpacing:3, color:"#38bdf8", textTransform:"uppercase", fontWeight:700 }}>🏆 Leaderboard</div>
-              <div style={{ fontSize:10, color:"rgba(56,189,248,0.5)" }}>Min {MIN_LB_KM} km to qualify</div>
+              {lbMode === "pace" && <div style={{ fontSize:10, color:"rgba(56,189,248,0.5)" }}>Min {MIN_LB_KM} km to qualify</div>}
             </div>
             {/* km / pace toggle */}
             <div style={{ display:"flex", gap:5, background:"rgba(0,0,0,0.3)", borderRadius:8, padding:3, marginBottom:10 }}>
@@ -649,12 +649,12 @@ export default function App() {
                 </button>
               ))}
             </div>
-            {lbList.length === 0 ? (
-              <div style={{ color:"rgba(224,242,254,0.28)", fontSize:13, textAlign:"center", padding:"18px 0" }}>No runners have hit {MIN_LB_KM} km yet — keep going!</div>
+            {memberList.length === 0 ? (
+              <div style={{ color:"rgba(224,242,254,0.28)", fontSize:13, textAlign:"center", padding:"18px 0" }}>No runners yet — log the first km!</div>
             ) : (() => {
               const displayList = lbMode === "pace"
                 ? [...lbList].filter(([,v])=>v.paceKm>0).sort((a,b)=>(a[1].paceTotal/a[1].paceKm)-(b[1].paceTotal/b[1].paceKm))
-                : lbList;
+                : memberList;
               const paceListFull = [...lbList].filter(([,v])=>v.paceKm>0).sort((a,b)=>(a[1].paceTotal/a[1].paceKm)-(b[1].paceTotal/b[1].paceKm));
               return (<>
                 {displayList.map(([n,v],i)=>{
@@ -717,8 +717,8 @@ export default function App() {
                     {lbList.length - paceListFull.length} qualified runner{lbList.length-paceListFull.length!==1?"s":""} without pace data not shown
                   </div>
                 )}
-                {/* Runners not yet qualified */}
-                {memberList.filter(([,v])=>(v.km||0)<MIN_LB_KM).length > 0 && (
+                {/* Runners not yet qualified — only show in pace mode */}
+                {lbMode === "pace" && memberList.filter(([,v])=>(v.km||0)<MIN_LB_KM).length > 0 && (
                   <div style={{ marginTop:10, paddingTop:9, borderTop:"1px solid rgba(255,255,255,0.06)" }}>
                     <div style={{ fontSize:9, color:"rgba(224,242,254,0.25)", letterSpacing:2, textTransform:"uppercase", marginBottom:7 }}>Working towards {MIN_LB_KM} km</div>
                     {memberList.filter(([,v])=>(v.km||0)<MIN_LB_KM).map(([n,v])=>{
