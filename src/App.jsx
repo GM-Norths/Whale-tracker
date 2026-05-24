@@ -29,12 +29,13 @@ const seedData = {
 };
 
 const TOTAL_KM = 4000;
+const MIN_LB_KM = 35; // Minimum km to appear on leaderboard
 const CUTOFF_DATE = new Date("2026-08-15T00:00:00");
 const ADMIN_PIN = "1234"; // ← Change this to your preferred PIN
 
 // ─── JSONBin.io config — paste your values here after setup ──────────────────
-const JSONBIN_BIN_ID  = "69f92ff2aaba882197700007";
-const JSONBIN_API_KEY = "$2a$10$5B/vcaN0geY01AhMkqs3IeoUqSiksT9SOAIQGG9IqYX5ON5Xb/OtK";
+const JSONBIN_BIN_ID  = "PASTE_BIN_ID_HERE";
+const JSONBIN_API_KEY = "PASTE_API_KEY_HERE";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LOCAL_KEY = "whale-tracker-cache";
@@ -322,6 +323,8 @@ export default function App() {
   const [editKm, setEditKm]               = useState("");
   const [editPace, setEditPace]           = useState("");
   const [editTier, setEditTier]           = useState("humpback");
+  const [lbMode, setLbMode]               = useState("km");      // "km" | "pace"
+  const [expandedMember, setExpandedMember] = useState(null);
 
   useEffect(() => {
     // Load instantly from cache/seed — no waiting
@@ -334,6 +337,7 @@ export default function App() {
 
   const members    = data.members || {};
   const memberList = Object.entries(members).sort((a, b) => (b[1].km - a[1].km) || a[0].localeCompare(b[0]));
+  const lbList     = memberList.filter(([,v]) => (v.km||0) >= MIN_LB_KM);
   const totalKm    = memberList.reduce((s,[,v]) => s + (v.km||0), 0);
   const progress   = Math.min(totalKm / TOTAL_KM, 1);
   const pct        = (progress * 100).toFixed(1);
@@ -374,12 +378,15 @@ export default function App() {
     const n = name.trim();
     const k = parseFloat(km);
     if (!n || isNaN(k) || k <= 0) return;
-    const ex = members[n] || { km:0, runs:0 };
+    const ex = members[n] || { km:0, runs:0, paceTotal:0, paceKm:0 };
+    const parsedPace = parsePace(pace);
     const updated = {
       ...members,
       [n]: {
-        km:   (ex.km||0) + k,
-        runs: (ex.runs||0) + 1,
+        km:        (ex.km||0) + k,
+        runs:      (ex.runs||0) + 1,
+        paceTotal: (ex.paceTotal||0) + (parsedPace ? parsedPace * k : 0),
+        paceKm:    (ex.paceKm||0)    + (parsedPace ? k : 0),
       }
     };
     const newData = {
@@ -434,8 +441,8 @@ export default function App() {
     setEditTarget(memberName);
     setEditName(memberName);
     setEditKm(v.km > 0 ? String(v.km) : "");
-    // Reconstruct avg pace for display
-    setEditTier(memberTier(v)?.id || "humpback");
+    const avgSec = v.paceKm > 0 ? Math.round(v.paceTotal / v.paceKm) : null;
+    setEditPace(avgSec ? formatPace(avgSec).replace(" /km","") : "");
   };
 
   const handleSaveEdit = async () => {
@@ -443,14 +450,16 @@ export default function App() {
     const newName = editName.trim();
     if (!newName) return;
     const k = parseFloat(editKm) || 0;
+    const parsedPace = parsePace(editPace);
     const updated = { ...members };
     const existing = updated[editTarget];
-    // Remove old entry (handle rename)
     delete updated[editTarget];
     updated[newName] = {
       ...existing,
       km: k,
       runs: existing.runs || 0,
+      paceTotal: parsedPace && k > 0 ? parsedPace * k : (existing.paceTotal||0),
+      paceKm:    parsedPace && k > 0 ? k               : (existing.paceKm||0),
     };
     const newData = { ...data, members: updated, lastUpdated: new Date().toISOString() };
     setData(newData);
@@ -628,32 +637,112 @@ export default function App() {
 
           {/* Leaderboard on map tab */}
           <div style={{ margin:"0 16px", background:"rgba(0,0,0,0.28)", border:"1px solid rgba(56,189,248,0.17)", borderRadius:14, padding:14 }}>
-            <div style={{ fontSize:10, letterSpacing:3, color:"#38bdf8", textTransform:"uppercase", fontWeight:700, marginBottom:10 }}>🏆 Leaderboard</div>
-            {memberList.length === 0 ? (
-              <div style={{ color:"rgba(224,242,254,0.28)", fontSize:13, textAlign:"center", padding:"18px 0" }}>No runners yet — log the first km!</div>
-            ) : memberList.map(([n,v],i)=>{
-              const share = totalKm > 0 ? ((v.km/totalKm)*100).toFixed(0) : 0;
-              const tier = memberTier(v);
-              return (
-                <div key={n} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", marginBottom:5, background: i===0?"rgba(234,179,8,0.07)":i===1?"rgba(148,163,184,0.06)":i===2?"rgba(180,83,9,0.06)":"rgba(255,255,255,0.03)", border:`1px solid ${i===0?"rgba(234,179,8,0.25)":i===1?"rgba(148,163,184,0.18)":i===2?"rgba(180,83,9,0.18)":"rgba(255,255,255,0.05)"}`, borderRadius:10 }}>
-                  <div style={{ width:20, textAlign:"center", fontSize: i<3?14:11, flexShrink:0 }}>{MEDALS[i]||`#${i+1}`}</div>
-                  {tier
-                    ? <div style={{ flexShrink:0, opacity:0.9 }}><WhaleGraphic id={tier.id} width={46}/></div>
-                    : <div style={{ width:46, flexShrink:0 }}/>
-                  }
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:700, fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n}</div>
-                    {tier && <div style={{ fontSize:9.5, color:tier.color, marginTop:1 }}>{tier.label}</div>}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <div style={{ fontSize:10, letterSpacing:3, color:"#38bdf8", textTransform:"uppercase", fontWeight:700 }}>🏆 Leaderboard</div>
+              <div style={{ fontSize:10, color:"rgba(56,189,248,0.5)" }}>Min {MIN_LB_KM} km to qualify</div>
+            </div>
+            {/* km / pace toggle */}
+            <div style={{ display:"flex", gap:5, background:"rgba(0,0,0,0.3)", borderRadius:8, padding:3, marginBottom:10 }}>
+              {[["km","🏃 Distance"],["pace","⚡ Avg Pace"]].map(([id,label])=>(
+                <button key={id} onClick={()=>setLbMode(id)} style={{ flex:1, padding:"6px 4px", borderRadius:6, border:"none", background: lbMode===id?"rgba(56,189,248,0.2)":"transparent", color: lbMode===id?"#38bdf8":"rgba(224,242,254,0.38)", fontWeight: lbMode===id?800:500, fontSize:11, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all 0.15s" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {lbList.length === 0 ? (
+              <div style={{ color:"rgba(224,242,254,0.28)", fontSize:13, textAlign:"center", padding:"18px 0" }}>No runners have hit {MIN_LB_KM} km yet — keep going!</div>
+            ) : (() => {
+              const displayList = lbMode === "pace"
+                ? [...lbList].filter(([,v])=>v.paceKm>0).sort((a,b)=>(a[1].paceTotal/a[1].paceKm)-(b[1].paceTotal/b[1].paceKm))
+                : lbList;
+              const paceListFull = [...lbList].filter(([,v])=>v.paceKm>0).sort((a,b)=>(a[1].paceTotal/a[1].paceKm)-(b[1].paceTotal/b[1].paceKm));
+              return (<>
+                {displayList.map(([n,v],i)=>{
+                  const share = totalKm > 0 ? ((v.km/totalKm)*100).toFixed(0) : 0;
+                  const tier = memberTier(v);
+                  const avgPaceSec = v.paceKm > 0 ? v.paceTotal/v.paceKm : null;
+                  const isExpanded = expandedMember === n;
+                  const paceRank = paceListFull.findIndex(([pn])=>pn===n);
+                  return (
+                    <div key={n} style={{ marginBottom:5 }}>
+                      <div onClick={()=>setExpandedMember(isExpanded?null:n)} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background: i===0?"rgba(234,179,8,0.07)":i===1?"rgba(148,163,184,0.06)":i===2?"rgba(180,83,9,0.06)":"rgba(255,255,255,0.03)", border:`1px solid ${i===0?"rgba(234,179,8,0.25)":i===1?"rgba(148,163,184,0.18)":i===2?"rgba(180,83,9,0.18)":"rgba(255,255,255,0.05)"}`, borderRadius: isExpanded?"10px 10px 0 0":10, cursor:"pointer" }}>
+                        <div style={{ width:20, textAlign:"center", fontSize: i<3?14:11, flexShrink:0 }}>{MEDALS[i]||`#${i+1}`}</div>
+                        {tier
+                          ? <div style={{ flexShrink:0, opacity:0.9 }}><WhaleGraphic id={tier.id} width={46}/></div>
+                          : <div style={{ width:46, flexShrink:0 }}/>
+                        }
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontWeight:700, fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n}</div>
+                          {tier && <div style={{ fontSize:9.5, color:tier.color, marginTop:1 }}>{tier.label}</div>}
+                        </div>
+                        <div style={{ textAlign:"right", flexShrink:0 }}>
+                          <div style={{ fontWeight:800, fontSize:14, color:"#38bdf8" }}>{v.km.toLocaleString(undefined,{maximumFractionDigits:1})} km</div>
+                          {avgPaceSec && <div style={{ fontSize:9, color:"rgba(224,242,254,0.4)", marginTop:1 }}>{formatPace(Math.round(avgPaceSec))}</div>}
+                        </div>
+                        <div style={{ fontSize:10, color:"rgba(224,242,254,0.28)", flexShrink:0 }}>{isExpanded?"▲":"▼"}</div>
+                      </div>
+                      {isExpanded && (
+                        <div style={{ background:"rgba(56,189,248,0.05)", border:`1px solid ${tier?.border||"rgba(56,189,248,0.15)"}`, borderTop:"none", borderRadius:"0 0 10px 10px", padding:"11px 13px" }}>
+                          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:7, marginBottom:9 }}>
+                            {[
+                              ["Total km", `${v.km.toFixed(1)} km`],
+                              ["Runs",     `${v.runs||0}`],
+                              ["Avg pace", avgPaceSec ? formatPace(Math.round(avgPaceSec)) : "—"],
+                              ["Group %",  `${share}%`],
+                              ["Pace rank",avgPaceSec && paceRank>=0 ? `#${paceRank+1}` : "—"],
+                              ["Species",  tier?.label||"—"],
+                            ].map(([lbl,val])=>(
+                              <div key={lbl} style={{ background:"rgba(0,0,0,0.28)", borderRadius:7, padding:"7px 5px", textAlign:"center" }}>
+                                <div style={{ fontSize:8, color:"rgba(125,211,252,0.5)", textTransform:"uppercase", letterSpacing:1, marginBottom:2 }}>{lbl}</div>
+                                <div style={{ fontSize:11, fontWeight:800, color:"#e0f2fe" }}>{val}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {tier && (
+                            <div style={{ display:"flex", alignItems:"center", gap:9, background:tier.bg, border:`1px solid ${tier.border}`, borderRadius:8, padding:"8px 11px" }}>
+                              <WhaleGraphic id={tier.id} width={58}/>
+                              <div>
+                                <div style={{ fontWeight:700, fontSize:12, color:tier.color }}>{tier.label}</div>
+                                <div style={{ fontSize:10, color:"rgba(224,242,254,0.45)", marginTop:2, lineHeight:1.5 }}>{tier.desc}</div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {lbMode==="pace" && paceListFull.length < lbList.length && (
+                  <div style={{ textAlign:"center", fontSize:10, color:"rgba(224,242,254,0.28)", marginTop:6 }}>
+                    {lbList.length - paceListFull.length} qualified runner{lbList.length-paceListFull.length!==1?"s":""} without pace data not shown
                   </div>
-                  <div style={{ width:34, height:4, background:"rgba(255,255,255,0.07)", borderRadius:999, overflow:"hidden", flexShrink:0 }}>
-                    <div style={{ width:`${share}%`, height:"100%", background: i===0?"#fbbf24":"#38bdf8", borderRadius:999 }}/>
+                )}
+                {/* Runners not yet qualified */}
+                {memberList.filter(([,v])=>(v.km||0)<MIN_LB_KM).length > 0 && (
+                  <div style={{ marginTop:10, paddingTop:9, borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ fontSize:9, color:"rgba(224,242,254,0.25)", letterSpacing:2, textTransform:"uppercase", marginBottom:7 }}>Working towards {MIN_LB_KM} km</div>
+                    {memberList.filter(([,v])=>(v.km||0)<MIN_LB_KM).map(([n,v])=>{
+                      const tier = memberTier(v);
+                      const needed = MIN_LB_KM - (v.km||0);
+                      const pct35 = Math.min(100, ((v.km||0)/MIN_LB_KM*100)).toFixed(0);
+                      return (
+                        <div key={n} style={{ display:"flex", alignItems:"center", gap:7, padding:"6px 8px", marginBottom:3, background:"rgba(255,255,255,0.02)", borderRadius:8, opacity:0.65 }}>
+                          {tier && <div style={{ flexShrink:0 }}><WhaleGraphic id={tier.id} width={36}/></div>}
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontWeight:600, fontSize:12 }}>{n}</div>
+                            <div style={{ height:3, background:"rgba(255,255,255,0.06)", borderRadius:999, marginTop:4, overflow:"hidden" }}>
+                              <div style={{ width:`${pct35}%`, height:"100%", background:"rgba(56,189,248,0.4)", borderRadius:999 }}/>
+                            </div>
+                          </div>
+                          <div style={{ fontSize:11, color:"rgba(224,242,254,0.35)", flexShrink:0 }}>{v.km.toFixed(1)} km</div>
+                          <div style={{ fontSize:10, color:"rgba(224,242,254,0.22)", flexShrink:0 }}>-{needed.toFixed(1)}</div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div style={{ fontWeight:800, fontSize:14, color:"#38bdf8", flexShrink:0, minWidth:60, textAlign:"right" }}>
-                    {v.km.toLocaleString(undefined,{maximumFractionDigits:1})} km
-                  </div>
-                </div>
-              );
-            })}
+                )}
+              </>);
+            })()}
           </div>
         </>
       )}
