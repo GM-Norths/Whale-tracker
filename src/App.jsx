@@ -34,8 +34,8 @@ const CUTOFF_DATE = new Date("2026-08-15T00:00:00");
 const ADMIN_PIN = "1234"; // ← Change this to your preferred PIN
 
 // ─── JSONBin.io config — paste your values here after setup ──────────────────
-const JSONBIN_BIN_ID  = "PASTE_BIN_ID_HERE";
-const JSONBIN_API_KEY = "PASTE_API_KEY_HERE";
+const JSONBIN_BIN_ID  = "69f92ff2aaba882197700007";
+const JSONBIN_API_KEY = "$2a$10$5B/vcaN0geY01AhMkqs3IeoUqSiksT9SOAIQGG9IqYX5ON5Xb/OtK";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LOCAL_KEY = "whale-tracker-cache";
