@@ -34,8 +34,8 @@ const CUTOFF_DATE = new Date("2026-08-15T00:00:00");
 const ADMIN_PIN = "1234"; // ← Change this to your preferred PIN
 
 // ─── JSONBin.io config — paste your values here after setup ──────────────────
-const JSONBIN_BIN_ID  = "69f92ff2aaba882197700007";
-const JSONBIN_API_KEY = "$2a$10$5B/vcaN0geY01AhMkqs3IeoUqSiksT9SOAIQGG9IqYX5ON5Xb/OtK";
+const JSONBIN_BIN_ID  = "PASTE_BIN_ID_HERE";
+const JSONBIN_API_KEY = "PASTE_API_KEY_HERE";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LOCAL_KEY = "whale-tracker-cache";
@@ -220,6 +220,37 @@ function WhaleGraphic({ id, width = 110 }) {
       <path d="M 16 34 L 5 25 L 16 31 L 26 25 L 16 34" fill="#e2e8f0"/>
       {/* Forehead highlight — melon is reflective */}
       <ellipse cx="80" cy="20" rx="7" ry="5" fill="white" opacity="0.55"/>
+    </svg>
+  );
+  if (id === "baleen") return (
+    <svg viewBox="0 0 110 62" width={width} height={height} style={{display:"block"}}>
+      {/* Massive arched body — right whale / bowhead style */}
+      <path d="M 88 28 Q 72 14 46 16 Q 20 16 12 28 Q 14 42 40 48 Q 66 52 88 38 Z" fill="#1a3320"/>
+      {/* Lighter belly */}
+      <path d="M 80 34 Q 58 46 36 47 Q 20 46 14 37 Q 18 48 42 52 Q 66 54 82 40 Z" fill="#2d5a3d" opacity="0.7"/>
+      {/* HIGHLY ARCHED rostrum — bowhead/right whale signature */}
+      <path d="M 88 28 Q 96 22 105 26 Q 100 32 88 36 Z" fill="#1a3320"/>
+      {/* Baleen plates hanging from upper jaw — the defining feature */}
+      <line x1="92" y1="29" x2="90" y2="38" stroke="#0d4a1a" strokeWidth="1.2" opacity="0.9"/>
+      <line x1="96" y1="28" x2="94" y2="37" stroke="#0d4a1a" strokeWidth="1.2" opacity="0.9"/>
+      <line x1="100" y1="27" x2="99" y2="36" stroke="#0d4a1a" strokeWidth="1.2" opacity="0.9"/>
+      <line x1="104" y1="26" x2="103" y2="35" stroke="#0d4a1a" strokeWidth="1.2" opacity="0.9"/>
+      <line x1="89" y1="30" x2="87" y2="39" stroke="#0d4a1a" strokeWidth="1" opacity="0.7"/>
+      {/* Callosities on head — right whale trademark rough patches */}
+      <ellipse cx="99" cy="22" rx="5" ry="3" fill="#2a5a35" opacity="0.8"/>
+      <ellipse cx="91" cy="19" rx="3" ry="2" fill="#2a5a35" opacity="0.7"/>
+      <ellipse cx="104" cy="20" rx="3" ry="2" fill="#2a5a35" opacity="0.6"/>
+      {/* Very broad rounded back */}
+      <path d="M 30 16 Q 50 10 65 16" fill="none" stroke="#254d2e" strokeWidth="2.5" strokeLinecap="round"/>
+      {/* Short paddle-like pectoral fin */}
+      <path d="M 68 42 L 62 56 L 72 50 Z" fill="#152a1a"/>
+      {/* Very wide V-shaped tail flukes */}
+      <path d="M 12 30 L 0 20 L 12 27 M 12 27 L 24 20 L 12 30" fill="#1a3320" stroke="#1a3320" strokeLinejoin="round"/>
+      {/* White chin patch */}
+      <ellipse cx="98" cy="36" rx="5" ry="3" fill="white" opacity="0.35"/>
+      {/* Eye */}
+      <circle cx="84" cy="28" r="2" fill="#0d2210"/>
+      <circle cx="84.5" cy="27.5" r="0.8" fill="#3d7a4a"/>
     </svg>
   );
   return null;
