@@ -32,16 +32,6 @@ const seedData = {
 };
 
 // ─── Load data: localStorage first, fall back to seedData ────────────────────
-function loadDataInstant() {
-  try {
-    const saved = localStorage.getItem(LOCAL_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && parsed.members) return { ...parsed, members: { ...seedData.members, ...parsed.members } };
-    }
-  } catch {}
-  return { ...seedData, members: { ...seedData.members } };
-}
 
 
 const TOTAL_KM = 4000;
