@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-// ─── Seed data (squad roster with starting tiers) ───────────────────────────
+
+// ─── Seed data (squad roster) ────────────────────────────────────────────────
 const seedData = {
   members: {
-    // From sheet
     "Tes":         { km:0, runs:0, paceTotal:0, paceKm:0 },
     "Tones":       { km:0, runs:0, paceTotal:0, paceKm:0 },
     "Vaughany":    { km:0, runs:0, paceTotal:0, paceKm:0 },
@@ -23,7 +23,6 @@ const seedData = {
     "Mudders":     { km:0, runs:0, paceTotal:0, paceKm:0 },
     "Jimbob":      { km:0, runs:0, paceTotal:0, paceKm:0 },
     "Colgs":       { km:0, runs:0, paceTotal:0, paceKm:0 },
-    // Keep even though not in sheet
     "Hodgey":      { km:0, runs:0, paceTotal:0, paceKm:0 },
     "Wallen":      { km:0, runs:0, paceTotal:0, paceKm:0 },
     "Shaz":        { km:0, runs:0, paceTotal:0, paceKm:0 }
@@ -32,35 +31,18 @@ const seedData = {
   firstUpdated: null
 };
 
-// ─── Load datauseEffect } from "react";
-// ─── Seed data (squad roster with starting tiers) ───────────────────────────
-const seedData = {
-  members: {
-    "Foz": { km:0, runs:0 },
-    "Hung": { km:0, runs:0 },
-    "Jimbo": { km:0, runs:0 },
-    "Moon": { km:0, runs:0 },
-    "Wads": { km:0, runs:0 },
-    "Vaughny": { km:0, runs:0 },
-    "Posty": { km:0, runs:0 },
-    "Wallen": { km:0, runs:0 },
-    "Tones": { km:0, runs:0 },
-    "Hodgey": { km:0, runs:0 },
-    "Gards": { km:0, runs:0 },
-    "Sharpy": { km:0, runs:0 },
-    "Coop": { km:0, runs:0 },
-    "Shaz": { km:0, runs:0 },
-    "Joe": { km:0, runs:0 },
-    "Fitto": { km:0, runs:0 },
-    "Mudders": { km:0, runs:0 },
-    "Hicksy": { km:0, runs:0 },
-    "Tes": { km:0, runs:0 },
-    "Rabbitoh": { km:0, runs:0 },
-    "Benny": { km:0, runs:0 },
-  },
-  lastUpdated: null,
-  firstUpdated: null,
-};
+// ─── Load data: localStorage first, fall back to seedData ────────────────────
+function loadDataInstant() {
+  try {
+    const saved = localStorage.getItem(LOCAL_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.members) return { ...parsed, members: { ...seedData.members, ...parsed.members } };
+    }
+  } catch {}
+  return { ...seedData, members: { ...seedData.members } };
+}
+
 
 const TOTAL_KM = 4000;
 const MIN_LB_KM = 35; // Minimum km to appear on leaderboard
@@ -68,8 +50,8 @@ const CUTOFF_DATE = new Date("2026-08-15T00:00:00");
 const ADMIN_PIN = "1234"; // ← Change this to your preferred PIN
 
 // ─── JSONBin.io config — paste your values here after setup ──────────────────
-const JSONBIN_BIN_ID  = "69f92ff2aaba882197700007";
-const JSONBIN_API_KEY = "$2a$10$5B/vcaN0geY01AhMkqs3IeoUqSiksT9SOAIQGG9IqYX5ON5Xb/OtK";
+const JSONBIN_BIN_ID  = "PASTE_BIN_ID_HERE";
+const JSONBIN_API_KEY = "PASTE_API_KEY_HERE";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LOCAL_KEY = "whale-tracker-cache";
