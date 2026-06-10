@@ -2,6 +2,40 @@ import { useState, useEffect } from "react";
 // ─── Seed data (squad roster with starting tiers) ───────────────────────────
 const seedData = {
   members: {
+    // From sheet
+    "Tes":         { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Tones":       { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Vaughany":    { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Sharpy":      { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Benny":       { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Fitto":       { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Coop":        { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Moon":        { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Houldsworth": { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Thump":       { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Rabbitoh":    { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Turner":      { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Foz":         { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Hicksy":      { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Wick":        { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Wads":        { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Nutty":       { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Mudders":     { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Jimbob":      { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Colgs":       { km:0, runs:0, paceTotal:0, paceKm:0 },
+    // Keep even though not in sheet
+    "Hodgey":      { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Wallen":      { km:0, runs:0, paceTotal:0, paceKm:0 },
+    "Shaz":        { km:0, runs:0, paceTotal:0, paceKm:0 }
+  },
+  lastUpdated: null,
+  firstUpdated: null
+};
+
+// ─── Load datauseEffect } from "react";
+// ─── Seed data (squad roster with starting tiers) ───────────────────────────
+const seedData = {
+  members: {
     "Foz": { km:0, runs:0 },
     "Hung": { km:0, runs:0 },
     "Jimbo": { km:0, runs:0 },
@@ -34,8 +68,8 @@ const CUTOFF_DATE = new Date("2026-08-15T00:00:00");
 const ADMIN_PIN = "1234"; // ← Change this to your preferred PIN
 
 // ─── JSONBin.io config — paste your values here after setup ──────────────────
-const JSONBIN_BIN_ID  = "69f92ff2aaba882197700007";
-const JSONBIN_API_KEY = "$2a$10$5B/vcaN0geY01AhMkqs3IeoUqSiksT9SOAIQGG9IqYX5ON5Xb/OtK";
+const JSONBIN_BIN_ID  = "69f92ff2aaba882197700007E";
+const JSONBIN_API_KEY = "$2a$10$5B/vcaN0geY01AhMkqs3IeoUqSiksT9S0AIQGG9IqYX50N5Xb/OtK";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LOCAL_KEY = "whale-tracker-cache";
